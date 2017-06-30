@@ -632,6 +632,14 @@ void cpu_ticks_init(void)
                                            cpu_throttle_timer_tick, NULL);
 }
 
+// BEGIN CHANGE
+static Notifier icount_exit_notifier;
+
+static void print_instruction_count(Notifier *notifier, void *data) {
+	printf ("Executed %"PRId64" target instructions.\n", cpu_get_icount_raw());
+}
+// END CHANGE
+
 void configure_icount(QemuOpts *opts, Error **errp)
 {
     const char *option;
@@ -662,6 +670,8 @@ void configure_icount(QemuOpts *opts, Error **errp)
         if (errno != 0 || *rem_str != '\0' || !strlen(option)) {
             error_setg(errp, "icount: Invalid shift value");
         }
+		icount_exit_notifier.notify = &print_instruction_count;
+		qemu_add_exit_notifier(&icount_exit_notifier);
         use_icount = 1;
         return;
     } else if (icount_align_option) {
